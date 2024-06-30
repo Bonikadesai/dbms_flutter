@@ -60,7 +60,11 @@ class DBHelper with StudentDB {
       "age": stud.age,
       "date": stud.date
     };
-    await db.insert(studTable, data);
+    await db
+        .insert(studTable, data, conflictAlgorithm: ConflictAlgorithm.replace)
+        .then((value) {
+      logger.i("$studTable is Inserted Successfully...");
+    });
   }
 
   @override
