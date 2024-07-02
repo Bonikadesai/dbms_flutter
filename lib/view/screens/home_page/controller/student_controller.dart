@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class StudentController extends ChangeNotifier {
+  List<StudentModel> studentList = [];
   StudentModel studentModel = StudentModel(
     id: 0,
     name: "",
@@ -17,23 +19,28 @@ class StudentController extends ChangeNotifier {
     date: "",
   );
 
+  StudentController() {
+    fetchStudentData();
+  }
+
   void addStudentBirthDate({required DateTime? dateTime}) {
     studentModel.dateTime = dateTime;
     notifyListeners();
   }
 
-  // void addStudentImage({required String? image}) {
-  //   studentModel.image = image as File?;
-  //   notifyListeners();
-  // }
-
   Future<void> addStudentImage() async {
     ImagePicker picker = ImagePicker();
-    XFile? pickedFile = await picker.pickImage(source: ImageSource.camera);
+    XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       studentModel.image = File(pickedFile.path);
     }
+    notifyListeners();
+  }
+
+  void assignNullValueForImageOrDate() {
+    studentModel.image = null;
+    studentModel.dateTime = null;
     notifyListeners();
   }
 
@@ -51,6 +58,42 @@ class StudentController extends ChangeNotifier {
       date:
           "${studentModel.dateTime?.day}/${studentModel.dateTime?.month}/${studentModel.dateTime?.year}",
     );
-    await DBHelper.dbHelper.insertStudentData(stud: stud);
+    await DBHelper.dbHelper.insertStudentData(stud: stud).then(
+          (value) => fetchStudentData(),
+        );
+    notifyListeners();
+  }
+
+  Future<void> fetchStudentData() async {
+    studentList = await DBHelper.dbHelper.fetchAllStudentData();
+    notifyListeners();
+  }
+
+  Future<void> updateStudentData(
+      {required String name, required int age, required int id}) async {
+    log("NAME : $name");
+    log("AGE : $age");
+    StudentModel stud = StudentModel(
+      id: id,
+      name: name,
+      image: null,
+      studImage: studentModel.image?.readAsBytesSync() ?? Uint8List(0),
+      age: age,
+      dateTime: null,
+      date:
+          "${studentModel.dateTime?.day}/${studentModel.dateTime?.month}/${studentModel.dateTime?.year}",
+    );
+    await DBHelper.dbHelper.updateStudentData(stud: stud).then(
+          (value) => fetchStudentData(),
+        );
+    notifyListeners();
+  }
+
+  Future<void> deleteStudentData({required int id}) async {
+    await DBHelper.dbHelper.deleteStudentData(id: id).then(
+          (value) => fetchStudentData(),
+        );
+
+    notifyListeners();
   }
 }

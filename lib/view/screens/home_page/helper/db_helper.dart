@@ -8,9 +8,11 @@ mixin StudentDB {
 
   void insertStudentData({required StudentModel stud});
 
-  void updateStudentData();
+  void fetchAllStudentData();
 
-  void deleteStudentData();
+  void updateStudentData({required StudentModel stud});
+
+  void deleteStudentData({required int id});
 }
 
 class DBHelper with StudentDB {
@@ -37,7 +39,7 @@ class DBHelper with StudentDB {
       onCreate: (db, version) async {
         sql = '''CREATE TABLE IF NOT EXISTS $studTable (
           id INTEGER PRIMARY KEY AUTOINCREMENT, 
-          image BLOB
+          image BLOB NOT NULL,
           name TEXT NOT NULL,
           age INTEGER NOT NULL,
           date TEXT NOT NULL
@@ -54,26 +56,38 @@ class DBHelper with StudentDB {
 
   @override
   Future<void> insertStudentData({required StudentModel stud}) async {
-    Map<String, dynamic> data = {
-      "image": stud.studImage,
-      "name": stud.name,
-      "age": stud.age,
-      "date": stud.date
-    };
-    await db
-        .insert(studTable, data, conflictAlgorithm: ConflictAlgorithm.replace)
-        .then((value) {
+    await db.insert(studTable, stud.toMap).then((value) {
       logger.i("$studTable is Inserted Successfully...");
     });
   }
 
   @override
-  void updateStudentData() {
-    // TODO: implement updateStudentData
+  Future<List<StudentModel>> fetchAllStudentData() async {
+    List<Map<String, dynamic>> allData = await db.query(studTable);
+
+    return allData
+        .map(
+          (e) => StudentModel.fromMap(data: e),
+        )
+        .toList();
   }
 
   @override
-  void deleteStudentData() {
-    // TODO: implement deleteStudentData
+  Future<void> updateStudentData({required StudentModel stud}) async {
+    await db.update(
+      studTable,
+      stud.toMap,
+      where: "id = ?",
+      whereArgs: [stud.id],
+    );
+  }
+
+  @override
+  Future<void> deleteStudentData({required int id}) async {
+    await db.delete(
+      studTable,
+      where: "id = ?",
+      whereArgs: [id],
+    );
   }
 }
